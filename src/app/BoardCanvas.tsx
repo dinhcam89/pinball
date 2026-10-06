@@ -90,9 +90,7 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
       let container = new pixi.Container()
       board.addChildAt(startArrow, 0)
       container.addChild(board, trail, bumpers, ball, errorDisk, successDisk)
-      const bloomFilter = new AdvancedBloomFilter({ threshold: 0.4, bloomScale: 1.2, brightness: 1.0, blur: 8, quality: 4 });
-      container.filters = [bloomFilter];
-      app.stage.addChild(container)
+            app.stage.addChild(container)
 
       let applyLayout = () => {
         let width = host.current?.clientWidth ?? window.innerWidth
