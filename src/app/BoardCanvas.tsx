@@ -1,4 +1,5 @@
 import * as pixi from 'pixi.js'
+import { AdvancedBloomFilter } from 'pixi-filters'
 import { useEffect, useRef } from 'react'
 import { PinballConfig } from '../config/config'
 import { drawStartArrow } from '../display/arrow'
@@ -34,6 +35,9 @@ interface Scene {
   successDisk: pixi.Graphics
   bumperGrid: (pixi.Graphics | 'nothing')[][]
   journey: number
+  shake: number
+  baseX: number
+  baseY: number
   animate?: (ticker: pixi.Ticker) => void
 }
 
@@ -86,6 +90,8 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
       let container = new pixi.Container()
       board.addChildAt(startArrow, 0)
       container.addChild(board, trail, bumpers, ball, errorDisk, successDisk)
+      const bloomFilter = new AdvancedBloomFilter({ threshold: 0.4, bloomScale: 1.2, brightness: 1.0, blur: 8, quality: 4 });
+      container.filters = [bloomFilter];
       app.stage.addChild(container)
 
       let applyLayout = () => {
@@ -115,6 +121,9 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
         successDisk,
         bumperGrid,
         journey: 0,
+        shake: 0,
+        baseX: 0,
+        baseY: 0,
       }
       sceneRef.current = scene
       applySceneRef.current = () => {
@@ -178,14 +187,49 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
               let bumper = scene.bumperGrid[mark.y - 1][mark.x - 1]
               if (bumper !== 'nothing') {
                 bumper.visible = true
+                // Bumper pulse
+                bumper.scale.set(1.4)
               }
               mark.revealed = true
+              scene.shake = 150 // 150ms screen shake
             }
-            let diff = Math.abs((scene.journey % 1) - 0.5)
-            let direction = scene.journey % 1 < 0.5 ? mark.in : mark.out
+            let prog = scene.journey % 1
+            // Ease out/in for smooth motion
+            let easedProg = prog < 0.5 ? 2 * prog * prog : -1 + (4 - 2 * prog) * prog
+            let diff = Math.abs(easedProg - 0.5)
+            
+            let direction = prog < 0.5 ? mark.in : mark.out
             let move = moveFromDirection(direction)
             scene.ball.x = (mark.x + 0.5 + move.x * diff) * scene.layout.side
             scene.ball.y = (mark.y + 0.5 + move.y * diff) * scene.layout.side
+            
+            // Ball squash and stretch based on speed
+            let speed = Math.abs(prog - 0.5) * 2 // 1 at edges, 0 at center
+            let stretch = 1.0 + (1 - speed) * 0.3
+            let squash = 1.0 - (1 - speed) * 0.2
+            if (move.x !== 0) {
+              scene.ball.scale.set(stretch, squash)
+            } else {
+              scene.ball.scale.set(squash, stretch)
+            }
+            
+            // Screen shake apply
+            if (scene.shake > 0) {
+              scene.shake -= ticker.elapsedMS
+              scene.container.x = scene.baseX + (Math.random() - 0.5) * 8
+              scene.container.y = scene.baseY + (Math.random() - 0.5) * 8
+            } else {
+              scene.container.x = scene.baseX
+              scene.container.y = scene.baseY
+            }
+            
+            // Bumper scale recovery
+            let bumper = scene.bumperGrid[mark.y - 1]?.[mark.x - 1]
+            if (bumper !== 'nothing' && bumper && bumper.scale.x > 1.0) {
+                bumper.scale.x = Math.max(1.0, bumper.scale.x - ticker.elapsedMS * 0.002)
+                bumper.scale.y = Math.max(1.0, bumper.scale.y - ticker.elapsedMS * 0.002)
+            }
+
             if (scene.journey % 1 >= 0.25) {
               scene.trail.children[(scene.journey | 0) * 2].visible = true
             }
