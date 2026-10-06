@@ -5,7 +5,7 @@
 !/src/
 
 # Files
-/.*
+/.parcel-cache
 *.log
 
 !/.editorconfig
