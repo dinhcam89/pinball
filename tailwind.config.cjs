@@ -2,35 +2,38 @@ module.exports = {
   content: ['./src/**/*.{html,ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Courier New"', 'Courier', 'monospace'],
+      },
       colors: {
-        background: '#F9FAFB',
-        surface: '#FFFFFF',
-        foreground: '#374151',
+        background: '#0A0A1A',
+        surface: '#151525',
+        foreground: '#00FFFF',
         primary: {
-          DEFAULT: '#7BA085',
-          hover: '#8EB298',
+          DEFAULT: '#FF007F',
+          hover: '#FF3399',
+          foreground: '#0A0A1A'
+        },
+        muted: '#FF007F',
+        error: {
+          DEFAULT: '#FF0055',
           foreground: '#FFFFFF'
         },
-        muted: '#9CA3AF',
-        error: {
-          DEFAULT: '#FECDD3',
-          foreground: '#BE123C'
-        },
         success: {
-          DEFAULT: '#BBF7D0',
-          foreground: '#15803D'
+          DEFAULT: '#00FFCC',
+          foreground: '#0A0A1A'
         },
-        switch: '#7BA085',
-        panel: '#FFFFFF'
+        switch: '#00FFFF',
+        panel: '#151525'
       },
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
+        'xl': '0.5rem',
+        '2xl': '0.5rem',
+        '3xl': '0.5rem',
       },
       boxShadow: {
-        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
-        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.04)'
+        'soft': '0 0 20px rgba(0, 255, 255, 0.3)',
+        'inner-soft': 'inset 0 0 10px rgba(255, 0, 127, 0.2)'
       }
     },
   },
