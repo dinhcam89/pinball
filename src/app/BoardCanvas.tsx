@@ -211,23 +211,19 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
                 bumper.scale.set(1.5)
               }
               mark.revealed = true
-              scene.shake = 200
+              
 
-              // Spawn impact particles
-              for (let i = 0; i < 12; i++) {
-                let p = new pixi.Graphics()
-                let angle = (i / 12) * Math.PI * 2
-                let speed = 2 + Math.random() * 3
-                let size = 2 + Math.random() * 3
-                p.circle(0, 0, size).fill({ color: config.bumperColor, alpha: 0.9 })
-                p.x = scene.ball.x
-                p.y = scene.ball.y
-                ;(p as any)._vx = Math.cos(angle) * speed
-                ;(p as any)._vy = Math.sin(angle) * speed
-                ;(p as any)._life = 1.0
-                scene.particleContainer.addChild(p)
-                scene.particles.push(p)
-              }
+              // Spawn soft ripple
+              let p = new pixi.Graphics()
+              p.circle(0, 0, scene.layout.side * 0.4).stroke({ color: config.bumperColor, width: 2, alpha: 0.5 })
+              p.x = scene.ball.x
+              p.y = scene.ball.y
+              ;(p as any)._vx = 0
+              ;(p as any)._vy = 0
+              ;(p as any)._life = 1.0
+              ;(p as any)._isRipple = true
+              scene.particleContainer.addChild(p)
+              scene.particles.push(p)
             }
 
             // ── Smooth cubic ease (ease-in-out) ──
@@ -252,16 +248,7 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
               scene.ball.scale.set(squash, stretch)
             }
 
-            // ── Screen shake ──
-            if (scene.shake > 0) {
-              scene.shake -= ticker.elapsedMS
-              let intensity = (scene.shake / 200) * 6
-              scene.container.x = scene.baseX + (Math.random() - 0.5) * intensity
-              scene.container.y = scene.baseY + (Math.random() - 0.5) * intensity
-            } else {
-              scene.container.x = scene.baseX
-              scene.container.y = scene.baseY
-            }
+
 
             // ── Bumper scale decay ──
             let bumperAtMark = scene.bumperGrid[mark.y - 1]?.[mark.x - 1]
@@ -272,30 +259,20 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
 
             // ── Update particles ──
             scene.particles = scene.particles.filter((p) => {
-              ;(p as any)._life -= ticker.elapsedMS * 0.003
+              ;(p as any)._life -= ticker.elapsedMS * 0.002
               if ((p as any)._life <= 0) {
                 scene.particleContainer.removeChild(p)
                 return false
               }
-              p.x += (p as any)._vx
-              p.y += (p as any)._vy
-              ;(p as any)._vy += 0.15 // gravity
-              p.alpha = (p as any)._life
-              p.scale.set((p as any)._life)
+              if ((p as any)._isRipple) {
+                let scale = 1.0 + (1.0 - (p as any)._life) * 1.5
+                p.scale.set(scale)
+                p.alpha = (p as any)._life
+              }
               return true
             })
 
-            // ── Neon trail ghost every ~8ms ──
-            if (Math.random() < 0.4) {
-              let ghost = new pixi.Graphics()
-              ghost.circle(0, 0, scene.layout.ballRadius * 0.5)
-                .fill({ color: config.ballColor, alpha: 0.3 })
-              ghost.x = bx
-              ghost.y = by
-              ;(ghost as any)._life = 1.0
-              scene.particleContainer.addChild(ghost)
-              scene.particles.push(ghost)
-            }
+
 
             // ── Trail dots ──
             if (scene.journey % 1 >= 0.25) {
