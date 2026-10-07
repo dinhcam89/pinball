@@ -78,17 +78,17 @@ export function getConfig(location: Location) {
     pauseAfterSuccess: () => false,
     pauseAfterFailure: () => true,
     // Colors
-    backgroundColor: () => 0xFDFBF7,
-    ballColor: () => 0x4A3C31,
-    boardColor: () => 0xF4EFE6,
-    bumperColor: () => 0xC08A6B,
-    indicatorColor: () => 0xE8DED1,
-    indicatorStrokeColor: () => 0xD6C8B8,
-    indicatorLitColor: () => 0xC08A6B,
-    slateColor: () => 0xE8DED1,
-    trailDotColor: () => 0xB5A597,
-    successDiskColor: () => 0x84A98C,
-    errorDiskColor: () => 0xD9736A,
+    backgroundColor: () => 0x06141B,
+    ballColor: () => 0x34D399,
+    boardColor: () => 0x11222C,
+    bumperColor: () => 0x34D399,
+    indicatorColor: () => 0x1B2A36,
+    indicatorStrokeColor: () => 0x2C4659,
+    indicatorLitColor: () => 0x34D399,
+    slateColor: () => 0x1B2A36,
+    trailDotColor: () => 0x10B981,
+    successDiskColor: () => 0x34D399,
+    errorDiskColor: () => 0xF43F5E,
   })
 
   return config

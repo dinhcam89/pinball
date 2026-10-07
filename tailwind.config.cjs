@@ -6,25 +6,25 @@ module.exports = {
         sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
-        background: '#FDFBF7',
-        surface: '#F4EFE6',
-        foreground: '#4A3C31',
+        background: '#06141B',
+        surface: '#11222C',
+        foreground: '#E2E8F0',
         primary: {
-          DEFAULT: '#C08A6B',
-          hover: '#A8765A',
-          foreground: '#FFFFFF'
+          DEFAULT: '#34D399',
+          hover: '#10B981',
+          foreground: '#06141B'
         },
-        muted: '#B5A597',
+        muted: '#64748B',
         error: {
-          DEFAULT: '#D9736A',
+          DEFAULT: '#F43F5E',
           foreground: '#FFFFFF'
         },
         success: {
-          DEFAULT: '#84A98C',
-          foreground: '#FFFFFF'
+          DEFAULT: '#34D399',
+          foreground: '#06141B'
         },
-        switch: '#C08A6B',
-        panel: '#FFFFFF'
+        switch: '#34D399',
+        panel: '#11222C'
       },
       borderRadius: {
         'xl': '1rem',
@@ -32,8 +32,8 @@ module.exports = {
         '3xl': '2rem',
       },
       boxShadow: {
-        'soft': '0 10px 40px -10px rgba(74, 60, 49, 0.1)',
-        'inner-soft': 'inset 0 2px 4px 0 rgba(74, 60, 49, 0.05)'
+        'soft': '0 10px 40px -10px rgba(0, 0, 0, 0.4)',
+        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.2)'
       }
     },
   },
