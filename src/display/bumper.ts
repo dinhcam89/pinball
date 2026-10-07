@@ -5,15 +5,20 @@ import { LayoutInfo } from './layout'
 function drawBumper(direction: BumperDirection, color: number, layout: LayoutInfo) {
   let { bumperWidth, bumperHeight, side } = layout
 
-  let g = new pixi.Graphics()
-  g.roundRect(-bumperWidth / 2, -bumperHeight / 2, bumperWidth, bumperHeight, side / 8)
-    .fill(color)
-    .stroke({
-      width: side / 10,
-      color,
-      alpha: 0.5,
-    })
+  let g = new pixi.Container() as pixi.Container & pixi.Graphics
 
+  // Outer glow
+  let glow = new pixi.Graphics()
+  glow.roundRect(-bumperWidth / 2 - 4, -bumperHeight / 2 - 4, bumperWidth + 8, bumperHeight + 8, side / 6)
+    .fill({ color, alpha: 0.3 })
+
+  // Core bumper
+  let core = new pixi.Graphics()
+  core.roundRect(-bumperWidth / 2, -bumperHeight / 2, bumperWidth, bumperHeight, side / 8)
+    .fill(color)
+    .stroke({ width: side / 14, color: 0xffffff, alpha: 0.6 })
+
+  g.addChild(glow, core)
   g.rotation = Math.PI / 4
   if (direction === 'diagonalUp') {
     g.rotation *= -1
@@ -27,7 +32,7 @@ export function drawBumperContainerAndFillGrid(
   config: PinballConfig,
   layout: LayoutInfo,
   bumperArray: Bumper[],
-  bumperGrid: (pixi.Graphics | 'nothing')[][],
+  bumperGrid: (pixi.Container | 'nothing')[][],
 ) {
   let c = new pixi.Container()
 

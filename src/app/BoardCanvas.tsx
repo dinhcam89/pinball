@@ -33,11 +33,14 @@ interface Scene {
   ball: pixi.Graphics
   errorDisk: pixi.Graphics
   successDisk: pixi.Graphics
-  bumperGrid: (pixi.Graphics | 'nothing')[][]
+  bumperGrid: (pixi.Container | 'nothing')[][]
   journey: number
   shake: number
   baseX: number
   baseY: number
+  particles: pixi.Graphics[]
+  particleContainer: pixi.Container
+  glowTime: number
   animate?: (ticker: pixi.Ticker) => void
 }
 
@@ -89,7 +92,8 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
       let successDisk = drawDisk(config.successDiskColor, layout.ballRadius, layout.ballStrokeWidth)
       let container = new pixi.Container()
       board.addChildAt(startArrow, 0)
-      container.addChild(board, trail, bumpers, ball, errorDisk, successDisk)
+      let particleContainer = new pixi.Container()
+      container.addChild(board, trail, bumpers, particleContainer, ball, errorDisk, successDisk)
             app.stage.addChild(container)
 
       let applyLayout = () => {
@@ -101,6 +105,10 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
         container.scale.set(scale)
         container.x = nextLayout.boardBase.x
         container.y = nextLayout.boardBase.y
+        if (sceneRef.current) {
+          sceneRef.current.baseX = nextLayout.boardBase.x
+          sceneRef.current.baseY = nextLayout.boardBase.y
+        }
       }
       resize = applyLayout
       window.addEventListener('resize', resize)
@@ -120,8 +128,11 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
         bumperGrid,
         journey: 0,
         shake: 0,
-        baseX: 0,
-        baseY: 0,
+        baseX: container.x,
+        baseY: container.y,
+        particles: [],
+        particleContainer,
+        glowTime: 0,
       }
       sceneRef.current = scene
       applySceneRef.current = () => {
@@ -160,6 +171,8 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
           scene.trail.children.forEach((child) => (child.visible = false))
           scene.animate = (ticker) => {
             scene.journey += (ticker.elapsedMS * 0.006 * config.ballSpeed) / 100
+            scene.glowTime += ticker.elapsedMS
+
             let finalMarkIndex = game.trail.length - 1
             if (scene.journey >= finalMarkIndex + 0.5) {
               scene.journey = finalMarkIndex + 0.5
@@ -180,54 +193,103 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
               onResolvedRef.current(target.x === currentGuess?.x && target.y === currentGuess?.y)
               return
             }
+
+            // ── Bumper reveal + impact effects ──
             if (scene.journey % 1 >= 0.5 && mark.in !== opposite(mark.out) && !mark.revealed) {
               bellSound.play()
               let bumper = scene.bumperGrid[mark.y - 1][mark.x - 1]
               if (bumper !== 'nothing') {
                 bumper.visible = true
-                // Bumper pulse
-                bumper.scale.set(1.4)
+                bumper.scale.set(1.5)
               }
               mark.revealed = true
-              scene.shake = 150 // 150ms screen shake
+              scene.shake = 200
+
+              // Spawn impact particles
+              for (let i = 0; i < 12; i++) {
+                let p = new pixi.Graphics()
+                let angle = (i / 12) * Math.PI * 2
+                let speed = 2 + Math.random() * 3
+                let size = 2 + Math.random() * 3
+                p.circle(0, 0, size).fill({ color: config.bumperColor, alpha: 0.9 })
+                p.x = scene.ball.x
+                p.y = scene.ball.y
+                ;(p as any)._vx = Math.cos(angle) * speed
+                ;(p as any)._vy = Math.sin(angle) * speed
+                ;(p as any)._life = 1.0
+                scene.particleContainer.addChild(p)
+                scene.particles.push(p)
+              }
             }
+
+            // ── Smooth cubic ease (ease-in-out) ──
             let prog = scene.journey % 1
-            // Ease out/in for smooth motion
-            let easedProg = prog < 0.5 ? 2 * prog * prog : -1 + (4 - 2 * prog) * prog
-            let diff = Math.abs(easedProg - 0.5)
-            
+            let t = prog < 0.5 ? 4 * prog * prog * prog : 1 - Math.pow(-2 * prog + 2, 3) / 2
+            let diff = Math.abs(t - 0.5)
+
             let direction = prog < 0.5 ? mark.in : mark.out
             let move = moveFromDirection(direction)
-            scene.ball.x = (mark.x + 0.5 + move.x * diff) * scene.layout.side
-            scene.ball.y = (mark.y + 0.5 + move.y * diff) * scene.layout.side
-            
-            // Ball squash and stretch based on speed
-            let speed = Math.abs(prog - 0.5) * 2 // 1 at edges, 0 at center
-            let stretch = 1.0 + (1 - speed) * 0.3
-            let squash = 1.0 - (1 - speed) * 0.2
+            let bx = (mark.x + 0.5 + move.x * diff) * scene.layout.side
+            let by = (mark.y + 0.5 + move.y * diff) * scene.layout.side
+            scene.ball.x = bx
+            scene.ball.y = by
+
+            // ── Squash & stretch ──
+            let speed2 = Math.abs(prog - 0.5) * 2
+            let stretch = 1.0 + (1 - speed2) * 0.18
+            let squash = 1.0 - (1 - speed2) * 0.12
             if (move.x !== 0) {
               scene.ball.scale.set(stretch, squash)
             } else {
               scene.ball.scale.set(squash, stretch)
             }
-            
-            // Screen shake apply
+
+            // ── Screen shake ──
             if (scene.shake > 0) {
               scene.shake -= ticker.elapsedMS
-              scene.container.x = scene.baseX + (Math.random() - 0.5) * 8
-              scene.container.y = scene.baseY + (Math.random() - 0.5) * 8
+              let intensity = (scene.shake / 200) * 6
+              scene.container.x = scene.baseX + (Math.random() - 0.5) * intensity
+              scene.container.y = scene.baseY + (Math.random() - 0.5) * intensity
             } else {
               scene.container.x = scene.baseX
               scene.container.y = scene.baseY
             }
-            
-            // Bumper scale recovery
-            let bumper = scene.bumperGrid[mark.y - 1]?.[mark.x - 1]
-            if (bumper !== 'nothing' && bumper && bumper.scale.x > 1.0) {
-                bumper.scale.x = Math.max(1.0, bumper.scale.x - ticker.elapsedMS * 0.002)
-                bumper.scale.y = Math.max(1.0, bumper.scale.y - ticker.elapsedMS * 0.002)
+
+            // ── Bumper scale decay ──
+            let bumperAtMark = scene.bumperGrid[mark.y - 1]?.[mark.x - 1]
+            if (bumperAtMark !== 'nothing' && bumperAtMark && bumperAtMark.scale.x > 1.0) {
+              bumperAtMark.scale.x = Math.max(1.0, bumperAtMark.scale.x - ticker.elapsedMS * 0.004)
+              bumperAtMark.scale.y = Math.max(1.0, bumperAtMark.scale.y - ticker.elapsedMS * 0.004)
             }
 
+            // ── Update particles ──
+            scene.particles = scene.particles.filter((p) => {
+              ;(p as any)._life -= ticker.elapsedMS * 0.003
+              if ((p as any)._life <= 0) {
+                scene.particleContainer.removeChild(p)
+                return false
+              }
+              p.x += (p as any)._vx
+              p.y += (p as any)._vy
+              ;(p as any)._vy += 0.15 // gravity
+              p.alpha = (p as any)._life
+              p.scale.set((p as any)._life)
+              return true
+            })
+
+            // ── Neon trail ghost every ~8ms ──
+            if (Math.random() < 0.4) {
+              let ghost = new pixi.Graphics()
+              ghost.circle(0, 0, scene.layout.ballRadius * 0.5)
+                .fill({ color: config.ballColor, alpha: 0.3 })
+              ghost.x = bx
+              ghost.y = by
+              ;(ghost as any)._life = 1.0
+              scene.particleContainer.addChild(ghost)
+              scene.particles.push(ghost)
+            }
+
+            // ── Trail dots ──
             if (scene.journey % 1 >= 0.25) {
               scene.trail.children[(scene.journey | 0) * 2].visible = true
             }

@@ -8,7 +8,6 @@ export function drawBoard(
   layout: LayoutInfo,
   clickCallback: (position: Position) => void,
 ) {
-  // Outer board
   let board = new pixi.Graphics()
   board.rect(0, 0, layout.boardSize, layout.boardSize).fill(config.boardColor)
 
@@ -18,26 +17,32 @@ export function drawBoard(
 
   // Indicators
   Array.from({ length: size }, (_, k) => {
-    // draw indicators
-    // top
     board.addChild(createIndicator(game, config, layout, k + 1, 0, clickCallback))
-    // bottom
     board.addChild(createIndicator(game, config, layout, k + 1, size1, clickCallback))
-
-    // left
     board.addChild(createIndicator(game, config, layout, 0, k + 1, clickCallback))
-    // right
     board.addChild(createIndicator(game, config, layout, size1, k + 1, clickCallback))
   })
-  // Slates
+
+  // Slates with neon border
   Array.from({ length: size }, (_, ky) => {
     Array.from({ length: size }, (_, kx) => {
-      // draw slates
-      board
-        .rect((kx + 1) * side - 1, (ky + 1) * side - 1, side - 2, side - 2)
-        .fill(config.slateColor)
+      const sx = (kx + 1) * side
+      const sy = (ky + 1) * side
+      // Slate fill
+      board.rect(sx, sy, side - 2, side - 2).fill(config.slateColor)
+      // Neon corner accent top-left
+      board.rect(sx, sy, side * 0.12, 2).fill({ color: config.bumperColor, alpha: 0.6 })
+      board.rect(sx, sy, 2, side * 0.12).fill({ color: config.bumperColor, alpha: 0.6 })
+      // Neon corner accent bottom-right
+      board.rect(sx + side - 2 - side * 0.12, sy + side - 4, side * 0.12, 2).fill({ color: config.bumperColor, alpha: 0.6 })
+      board.rect(sx + side - 4, sy + side - 2 - side * 0.12, 2, side * 0.12).fill({ color: config.bumperColor, alpha: 0.6 })
     })
   })
+
+  // Scanline overlay
+  for (let y = 0; y < layout.boardSize; y += 4) {
+    board.rect(0, y, layout.boardSize, 1).fill({ color: 0x000000, alpha: 0.08 })
+  }
 
   return board
 }
@@ -54,36 +59,43 @@ export function createIndicator(
 
   let g = new pixi.Graphics()
 
-  let drawCircle = (color: number) => {
+  let drawCircle = (color: number, lit = false) => {
     g.clear()
-      .circle(0, 0, radius)
+    if (lit) {
+      // Outer glow ring when lit
+      g.circle(0, 0, radius * 1.6).fill({ color, alpha: 0.2 })
+      g.circle(0, 0, radius * 1.2).fill({ color, alpha: 0.3 })
+    }
+    g.circle(0, 0, radius)
       .fill(color)
       .stroke({ color: config.indicatorStrokeColor, width: layout.indicatorStrokeWidth })
+    if (lit) {
+      // Inner specular
+      g.circle(-radius * 0.2, -radius * 0.2, radius * 0.25).fill({ color: 0xffffff, alpha: 0.6 })
+    }
   }
+
   drawCircle(config.indicatorColor)
   g.x = Math.floor(side / 2) + x * side
   g.y = Math.floor(side / 2) + y * side
 
   g.eventMode = 'static'
-
   g.hitArea = new pixi.Circle(0, 0, radius)
 
   g.on('mouseover', () => {
     if (game.phase === 'guess') {
-      drawCircle(config.indicatorLitColor)
+      drawCircle(config.indicatorLitColor, true)
     }
   })
 
   g.on('mouseout', () => {
-    if (['result', 'end'].includes(game.phase)) {
-      return
-    }
+    if (['result', 'end'].includes(game.phase)) return
     drawCircle(config.indicatorColor)
   })
 
   g.on('pointerdown', () => {
     if (game.phase === 'guess') {
-      drawCircle(config.indicatorLitColor)
+      drawCircle(config.indicatorLitColor, true)
     }
     callback({ x, y })
   })
