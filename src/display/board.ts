@@ -30,19 +30,10 @@ export function drawBoard(
       const sy = (ky + 1) * side
       // Slate fill
       board.rect(sx, sy, side - 2, side - 2).fill(config.slateColor)
-      // Neon corner accent top-left
-      board.rect(sx, sy, side * 0.12, 2).fill({ color: config.bumperColor, alpha: 0.6 })
-      board.rect(sx, sy, 2, side * 0.12).fill({ color: config.bumperColor, alpha: 0.6 })
-      // Neon corner accent bottom-right
-      board.rect(sx + side - 2 - side * 0.12, sy + side - 4, side * 0.12, 2).fill({ color: config.bumperColor, alpha: 0.6 })
-      board.rect(sx + side - 4, sy + side - 2 - side * 0.12, 2, side * 0.12).fill({ color: config.bumperColor, alpha: 0.6 })
     })
   })
 
-  // Scanline overlay
-  for (let y = 0; y < layout.boardSize; y += 4) {
-    board.rect(0, y, layout.boardSize, 1).fill({ color: 0x000000, alpha: 0.08 })
-  }
+
 
   return board
 }
