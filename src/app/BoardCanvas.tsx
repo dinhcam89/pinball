@@ -144,6 +144,14 @@ export function BoardCanvas({ config, game, phase, guess, onGuess, onResolved }:
           scene.animate = undefined
         }
 
+        // Clean up physical juice state on phase transitions
+        scene.shake = 0
+        scene.container.x = scene.baseX
+        scene.container.y = scene.baseY
+        scene.particles = []
+        scene.particleContainer.removeChildren()
+        scene.ball.scale.set(1, 1)
+
         let showResult = ['result', 'end', 'review'].includes(currentPhase)
         scene.bumpers.visible = ['bumperView', 'result', 'end', 'review'].includes(currentPhase)
         scene.startArrow.visible = ['guess', 'result', 'end', 'review'].includes(currentPhase)
